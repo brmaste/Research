@@ -10,6 +10,9 @@ editor_options:
   chunk_output_type: console
 ---
 
+# Disclaimer 
+
+*This work is super preliminary as I get back into the coding swing of things. Data wrangling and figure generation will be done via R, but the rest of the project will be done using good ol' microsoft products. This is just an entry point into data crunching and should by no means be considered a final product.*
 
 # Steamboat Tower SNOTEL
 
@@ -40,9 +43,9 @@ library(lfstat)
 library(ggpubr)
 ```
 
-# Raw data download
+## Raw data download
 
-## Steamboat Tower (825) SNOTEL data
+### Steamboat Tower (825) SNOTEL data
 
 ```{r read in and download, echo=TRUE}
 # The fucntion snotel_download evidently downloads everything in metric units. 
@@ -53,7 +56,7 @@ write.csv(snotel_825_tower,"C:/Users/13074/Documents/ESS580/thesis_project/thesi
 
 ```
 
-## Data Cleaning
+### Data Cleaning
 
 ```{r clean}
 head(snotel_825_tower) # check the date, usually a character.  
@@ -72,7 +75,7 @@ snotel_825_clean <- snotel_825_tower %>% # filter for the timeframe
 
 ```
 
-## Figure check
+### Figure check
 
 ```{r 825 simple plot}
 ggplot(snotel_825_clean, aes(x = Date, y = temperature_mean)) +
@@ -94,7 +97,7 @@ dygraph(temp_xts) %>%
 
 ```
 
-# Detrending Data 
+## Detrending Data 
 
 ```{r detrending data}
 #SF figured out the yearly average by water year
@@ -160,7 +163,7 @@ dygraph(temp_xts) %>%
 ```
 
 
-## Calculating varience
+### Calculating varience
 
 ```{r Calculating residuals}
 #Calculating residuals, WY 1987 (first full year on record for 825)
@@ -180,9 +183,9 @@ residuals_2021 <- daily_wy_aver %>%
 
 ```
 
-# Figures 
+## Figures 
 
-## 1987
+### 1987
 
 ```{r residuals 1987}
 
@@ -213,7 +216,7 @@ ggplot(residuals_1987, aes(deviation)) +
 
 **Distribution of 1987 diurnal temperature fluctuation from the 1987-2021 period of record.**
 
-## 2021
+### 2021
 
 ```{r residuals 2021}
 
@@ -242,3 +245,23 @@ ggplot(residuals_2021, aes(deviation)) +
 ```
 
 **Distribution of 2021 diurnal temperature fluctuation from the 1987-2021 period of record.**
+
+# Next steps / Further questions
+
+### SNOTEL
+
+Need to investigate site specific issues related to disturbances (general SNOTEL issues). 
+
+Having issues with day-of-year and water year interactions.  
+
+Would using a pivot table be better when displaying temperature for 240 sites? (What data management is best for that much data?)
+
+How to include oscillation influence into the data?
+
+### Beyond SNOTEL
+
+What other data / site types do I want to include? 
+
+### Coding
+
+I am sure Matt would tell me to automate this. Not quite sure how, but it seems likely I could find a list of SNOTEL sites and using spatial data, exclude sites not within the CRB boundary. From there, I could write a for loop & function to use the snotelr function to download data. 
