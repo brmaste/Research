@@ -1,0 +1,244 @@
+---
+title: "CRB Variance"
+author: "Brian"
+date: "6/14/2022"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+
+# Steamboat Tower SNOTEL
+
+```{r libraries, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(snotelr)
+library(riem)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(dataRetrieval)
+library(lubridate)
+library(sf)
+library(ggthemes)
+library(xts)
+library(dygraphs)
+library(scales)
+library(openair)
+library(plotly)
+library(SciViews)
+knitr::opts_chunk$set(message = F, 
+                      warning = F,
+                      cache = T)
+knitr::opts_chunk$set(echo = TRUE)
+library(trend)
+library(nhdplusTools)
+library(lfstat)
+library(ggpubr)
+```
+
+# Raw data download
+
+## Steamboat Tower (825) SNOTEL data
+
+```{r read in and download, echo=TRUE}
+# The fucntion snotel_download evidently downloads everything in metric units. 
+
+snotel_825_tower <- snotel_download(site_id = 825, path = tempdir('../data'), internal = TRUE)
+
+write.csv(snotel_825_tower,"C:/Users/13074/Documents/ESS580/thesis_project/thesis_research/data_raw/snotel_825.csv", row.names = FALSE) #write in the raw data
+
+```
+
+## Data Cleaning
+
+```{r clean}
+head(snotel_825_tower) # check the date, usually a character.  
+
+snotel_825_tower$Date <- as.Date(snotel_825_tower$date) #change date from character to date format, capitalize to work with Water year functon from NWIS.
+
+
+snotel_825_clean <- snotel_825_tower %>% # filter for the timeframe
+  filter(Date >= "1978-10-01" & Date <= "2021-08-31") %>%
+  filter(temperature_mean >= -30 & temperature_mean <= 20) %>% # removing outliers   
+  addWaterYear() %>% 
+  mutate(daymonth = format(as.Date(Date), "%d-%m")) %>% 
+  na.omit()
+
+
+
+```
+
+## Figure check
+
+```{r 825 simple plot}
+ggplot(snotel_825_clean, aes(x = Date, y = temperature_mean)) +
+  geom_point() + #lwd = 2) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('Daily temperature (°C)') + 
+  xlab('Date')
+
+#Check for outliers....
+
+#dygraph
+
+temp_xts <- xts(snotel_825_clean$temperature_mean, order.by = snotel_825_clean$Date)
+
+dygraph(temp_xts) %>%
+  dyAxis("y", label = "Daily temperature (°C)") 
+
+
+```
+
+# Detrending Data 
+
+```{r detrending data}
+#SF figured out the yearly average by water year
+
+#average temperature by water year:
+
+yearly_wy_aver <- snotel_825_clean %>% 
+  group_by(waterYear) %>% 
+  mutate(aver_ann_temp = mean(temperature_mean))
+
+```
+
+
+```{r detrending data2}
+#Average temperature by month/day for all water years:
+
+daily_wy_aver <- yearly_wy_aver %>% 
+  group_by(daymonth) %>% 
+  mutate(aver_day_temp = mean(aver_ann_temp))
+
+#average mean temperature by day for the period of record:
+
+daily_wy_aver <- daily_wy_aver %>% 
+  group_by(daymonth) %>% 
+  mutate(all_ave_temp = mean(daily_wy_aver$aver_day_temp))
+
+#str(daily_wy_aver)
+
+```
+
+```{r detrend figures, eval=FALSE, include=FALSE}
+
+#making day-month numeric
+
+head(daily_wy_aver)
+
+daily_wy_aver2 <- daily_wy_aver %>% 
+  filter(waterYear == "1987" | waterYear == "2021") %>%
+  select(Date, waterYear, temperature_mean, daymonth, aver_ann_temp, aver_day_temp, all_ave_temp) %>% 
+  mutate(doy = yday(Date)) %>% 
+  group_by(waterYear)
+
+
+ggplot(daily_wy_aver2, aes(x = doy, y = aver_day_temp)) +
+  geom_line() +
+  geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('Daily temperature (°C)') + 
+  xlab('Date')
+
+#Check for outliers....
+
+#dygraph
+
+temp_xts <- xts(snotel_825_clean$temperature_mean, order.by = snotel_825_clean$Date)
+
+dygraph(temp_xts) %>%
+  dyAxis("y", label = "Daily temperature (°C)") 
+
+
+
+```
+
+
+## Calculating varience
+
+```{r Calculating residuals}
+#Calculating residuals, WY 1987 (first full year on record for 825)
+
+residuals_1987 <- daily_wy_aver %>% 
+  group_by(waterYear) %>% 
+  filter(waterYear == 1987) %>% 
+  mutate(residual = (aver_ann_temp-all_ave_temp)+temperature_mean-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual)))
+
+residuals_2021 <- daily_wy_aver %>% 
+  group_by(waterYear) %>% 
+  filter(waterYear == 2021) %>% 
+  mutate(residual = (aver_ann_temp-all_ave_temp)+temperature_mean-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual)))
+
+
+```
+
+# Figures 
+
+## 1987
+
+```{r residuals 1987}
+
+ggplot(residuals_1987, aes(residual)) +
+  geom_histogram(alpha = 0.5, color = "blue", bins = 15) +
+  #facet_wrap(~name) +
+  #scale_x_log10() +
+  theme_base() +
+  xlab("Temperature (°C) Above or Below Mean") +
+  ylab("Frequency")
+
+```
+
+**Distribution of daily temperature variance for 1987 compared to the 1987-2021 period of record.**
+
+
+```{r deviations 1987}
+
+ggplot(residuals_1987, aes(deviation)) +
+  geom_histogram(alpha = 0.5, color = "blue", bins = 15) +
+  #facet_wrap(~name) +
+  #scale_x_log10() +
+  theme_base() +
+  xlab("Diurnal Temperature Fluctuation (°C)") +
+  ylab("Frequency")
+
+```
+
+**Distribution of 1987 diurnal temperature fluctuation from the 1987-2021 period of record.**
+
+## 2021
+
+```{r residuals 2021}
+
+ggplot(residuals_2021, aes(residual)) +
+  geom_histogram(alpha = 0.5, color = "blue", bins = 15) +
+  #facet_wrap(~name) +
+  #scale_x_log10() +
+  theme_base() +
+  xlab("Temperature (°C) Above or Below Mean") +
+  ylab("Frequency")
+
+```
+
+**Distribution of daily temperature variance for 2021 compared to the 1987-2021 period of record.**
+
+```{r deviations 2021}
+
+ggplot(residuals_2021, aes(deviation)) +
+  geom_histogram(alpha = 0.5, color = "blue", bins = 15) +
+  #facet_wrap(~name) +
+  #scale_x_log10() +
+  theme_base() +
+  xlab("Diurnal Temperature Fluctuation (°C)") +
+  ylab("Frequency")
+
+```
+
+**Distribution of 2021 diurnal temperature fluctuation from the 1987-2021 period of record.**
