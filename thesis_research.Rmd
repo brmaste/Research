@@ -252,11 +252,11 @@ ggplot(residuals_2021, aes(deviation)) +
 
 Need to investigate site specific issues related to disturbances (general SNOTEL issues). 
 
-Having issues with day-of-year and water year interactions.  
+Having issues with day-of-year and water year interactions. This keeps me from showing mean trendlines over the whole period of record as R does not want to recognize the x axis as anything other than numerical.   
 
 Would using a pivot table be better when displaying temperature for 240 sites? (What data management is best for that much data?)
 
-How to include oscillation influence into the data?
+How to include oscillation influence into the data? 
 
 ### Beyond SNOTEL
 
@@ -264,4 +264,21 @@ What other data / site types do I want to include?
 
 ### Coding
 
-I am sure Matt would tell me to automate this. Not quite sure how, but it seems likely I could find a list of SNOTEL sites and using spatial data, exclude sites not within the CRB boundary. From there, I could write a for loop & function to use the snotelr function to download data. 
+I am sure Matt would tell me to automate this. Not quite sure how, but it seems likely I could find a list of SNOTEL sites and using spatial data, exclude sites not within the CRB boundary. From there, I could write a for loop & function to use the snotelr function to download data. *Jack Reuland helped with this idea below. Now what to do with the large dataframe....*
+
+# All stations:
+
+Per Jack's recommendations, BUT, while there are 240 stations, I could only find 166 while clipping the NRCS SNOTEL points and a CRB polygon from CAPGISadmin. The NRCS stated the sites given were active, so perhaps there are 74 inactive sites?
+
+```{r read in SNOTEL station site_ids from ArcGIS, echo=TRUE}
+
+TableOfSNOTEL_StudyArea <- read.csv("C:/Users/13074/Desktop/MS_Watershed_Science/Literature/SNOTEL_sites_1_2.csv", header = TRUE)
+
+studyarea_site_id <- as.vector(TableOfSNOTEL_StudyArea$site_id)
+
+SNOTEL_StudyArea <- snotel_download(site_id = c(studyarea_site_id), internal = TRUE)
+
+write.csv(SNOTEL_StudyArea,"C:/Users/13074/Documents/ESS580/thesis_project/thesis_research/data_raw/SNOTEL_StudyArea.csv", row.names = FALSE) #write in the raw data
+
+```
+

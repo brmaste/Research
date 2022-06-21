@@ -428,7 +428,7 @@ residuals_2021 &lt;- daily_wy_aver %&gt;%
 <div id="snotel" class="section level3">
 <h3>SNOTEL</h3>
 <p>Need to investigate site specific issues related to disturbances (general SNOTEL issues).</p>
-<p>Having issues with day-of-year and water year interactions.</p>
+<p>Having issues with day-of-year and water year interactions. This keeps me from showing mean trendlines over the whole period of record as R does not want to recognize the x axis as anything other than numerical.</p>
 <p>Would using a pivot table be better when displaying temperature for 240 sites? (What data management is best for that much data?)</p>
 <p>How to include oscillation influence into the data?</p>
 </div>
@@ -438,8 +438,20 @@ residuals_2021 &lt;- daily_wy_aver %&gt;%
 </div>
 <div id="coding" class="section level3">
 <h3>Coding</h3>
-<p>I am sure Matt would tell me to automate this. Not quite sure how, but it seems likely I could find a list of SNOTEL sites and using spatial data, exclude sites not within the CRB boundary. From there, I could write a for loop &amp; function to use the snotelr function to download data.</p>
+<p>I am sure Matt would tell me to automate this. Not quite sure how, but it seems likely I could find a list of SNOTEL sites and using spatial data, exclude sites not within the CRB boundary. From there, I could write a for loop &amp; function to use the snotelr function to download data. <em>Jack Reuland helped with this idea below. Now what to do with the large dataframe….</em></p>
 </div>
+</div>
+<div id="all-stations" class="section level1">
+<h1>All stations:</h1>
+<p>Per Jack’s recommendations, BUT, while there are 240 stations, I could only find 166 while clipping the NRCS SNOTEL points and a CRB polygon from CAPGISadmin. The NRCS stated the sites given were active, so perhaps there are 74 inactive sites?</p>
+<pre class="r"><code>TableOfSNOTEL_StudyArea &lt;- read.csv(&quot;C:/Users/13074/Desktop/MS_Watershed_Science/Literature/SNOTEL_sites_1_2.csv&quot;, header = TRUE)
+
+studyarea_site_id &lt;- as.vector(TableOfSNOTEL_StudyArea$site_id)
+
+SNOTEL_StudyArea &lt;- snotel_download(site_id = c(studyarea_site_id), internal = TRUE)</code></pre>
+<pre><code>## Error in wdman::phantomjs(verbose = FALSE) : 
+##   PhantomJS signals port = 4567 is already in use.</code></pre>
+<pre class="r"><code>write.csv(SNOTEL_StudyArea,&quot;C:/Users/13074/Documents/ESS580/thesis_project/thesis_research/data_raw/SNOTEL_StudyArea.csv&quot;, row.names = FALSE) #write in the raw data</code></pre>
 </div>
 
 
