@@ -452,6 +452,48 @@ SNOTEL_StudyArea &lt;- snotel_download(site_id = c(studyarea_site_id), internal 
 <pre><code>## Error in wdman::phantomjs(verbose = FALSE) : 
 ##   PhantomJS signals port = 4567 is already in use.</code></pre>
 <pre class="r"><code>write.csv(SNOTEL_StudyArea,&quot;C:/Users/13074/Documents/ESS580/thesis_project/thesis_research/data_raw/SNOTEL_StudyArea.csv&quot;, row.names = FALSE) #write in the raw data</code></pre>
+<pre class="r"><code>summary(SNOTEL_StudyArea)</code></pre>
+<pre><code>##    network             state            site_name         description       
+##  Length:1921986     Length:1921986     Length:1921986     Length:1921986    
+##  Class :character   Class :character   Class :character   Class :character  
+##  Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+##                                                                             
+##                                                                             
+##                                                                             
+##                                                                             
+##      start                 end                latitude       longitude     
+##  Min.   :1938-12-01   Min.   :2022-06-21   Min.   :32.92   Min.   :-115.7  
+##  1st Qu.:1978-10-01   1st Qu.:2022-06-21   1st Qu.:37.70   1st Qu.:-110.6  
+##  Median :1979-10-01   Median :2022-06-21   Median :39.31   Median :-109.1  
+##  Mean   :1982-12-15   Mean   :2022-06-21   Mean   :38.85   Mean   :-109.0  
+##  3rd Qu.:1985-10-01   3rd Qu.:2022-06-21   3rd Qu.:40.55   3rd Qu.:-107.1  
+##  Max.   :2016-09-01   Max.   :2022-06-21   Max.   :43.25   Max.   :-105.8  
+##                                                                            
+##       elev         county             site_id           date          
+##  Min.   :1950   Length:1921986     Min.   : 308.0   Length:1921986    
+##  1st Qu.:2611   Class :character   1st Qu.: 488.0   Class :character  
+##  Median :2811   Mode  :character   Median : 640.0   Mode  :character  
+##  Mean   :2833                      Mean   : 673.7                     
+##  3rd Qu.:3091                      3rd Qu.: 831.0                     
+##  Max.   :3525                      Max.   :1271.0                     
+##                                                                       
+##  snow_water_equivalent precipitation_cumulative temperature_max 
+##  Min.   :   0.0        Min.   :   0.0           Min.   : -65.9  
+##  1st Qu.:   0.0        1st Qu.: 165.0           1st Qu.:   3.0  
+##  Median :  13.0        Median : 363.0           Median :  10.6  
+##  Mean   : 119.4        Mean   : 396.8           Mean   :  10.8  
+##  3rd Qu.: 190.0        3rd Qu.: 577.0           3rd Qu.:  18.4  
+##  Max.   :2024.0        Max.   :2167.0           Max.   :3046.0  
+##  NA&#39;s   :25918         NA&#39;s   :19608            NA&#39;s   :373355  
+##  temperature_min  temperature_mean precipitation    
+##  Min.   : -99.0   Min.   : -99.0   Min.   :  0.000  
+##  1st Qu.:  -8.7   1st Qu.:  -3.1   1st Qu.:  0.000  
+##  Median :  -1.9   Median :   3.2   Median :  0.000  
+##  Mean   :  -2.4   Mean   :   3.6   Mean   :  2.127  
+##  3rd Qu.:   3.7   3rd Qu.:  10.4   3rd Qu.:  3.000  
+##  Max.   :3046.0   Max.   :3046.0   Max.   :450.000  
+##  NA&#39;s   :369620   NA&#39;s   :356991   NA&#39;s   :20651</code></pre>
+<pre class="r"><code>#lol, this is meaningless. </code></pre>
 </div>
 
 

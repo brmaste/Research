@@ -282,3 +282,10 @@ write.csv(SNOTEL_StudyArea,"C:/Users/13074/Documents/ESS580/thesis_project/thesi
 
 ```
 
+```{r summary StudyArea}
+
+summary(SNOTEL_StudyArea)
+
+#lol, this is meaningless. 
+```
+
