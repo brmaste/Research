@@ -41,6 +41,14 @@ library(trend)
 library(nhdplusTools)
 library(lfstat)
 library(ggpubr)
+
+#Stats
+library(forcats)
+library(stringr)
+library(trend)
+
+# COOP/ Did not work
+#library(rnoaa)
 ```
 
 ## Raw data download
@@ -85,12 +93,16 @@ snotel_825_clean <- snotel_825 %>% # filter for the timeframe
 
 ##### adding water day using difftime (SUPER COOL. example from [this](https://stackoverflow.com/questions/48123049/create-day-index-based-on-water-year))
 
-```{r clean water day}
+```{r clean water day & save}
+
 #adding water day using difftime (SUPER COOL. example from [this](https://stackoverflow.com/questions/48123049/create-day-index-based-on-water-year))
 
 snotel_825_clean <- snotel_825_clean %>% 
   group_by(waterYear)%>% 
   mutate(waterDay = (as.integer(difftime(Date, ymd(paste0(waterYear - 1 ,'-09-30')), units = "days"))))
+
+
+write.csv(snotel_825_clean,"C:/Users/13074/Documents/ESS580/thesis_project/thesis_research/data_clean/snotel_825_clean.csv", row.names = FALSE)
 
 ```
 
@@ -247,30 +259,9 @@ ggplot(daily_wy_aver3) + #, color = waterYear)) +
 # ?scale_discrete_identity()
 
 ```
-**Day of year average temperature and daily 1987 & 2021 temperatures for the 1987-2021 period of record for Tower SNOTEL site.**
 
+**Day of year average temperature and daily 1987 & 2021 temperatures for the 1987-2021 period of record for Tower SNOTEL site.** *legend is bad.*
 
-```{r factor day labels, eval=FALSE, include=FALSE}
-
-daily_wy_aver2$DOY <- factor(daily_wy_aver2$DOY, levels=c(274, 275, 276, 277, 278 279 280 281 282 283 284 285 286 287 288 289 290 291 292 293 294 295 296 297 298 299
-[27] 300 301 302 303 304 305 306 307 308 309 310 311 312 313 314 315 316 317 318 319 320 321 322 323 324 325
-[53] 326 327 328 329 330 331 332 333 334 335 336 337 338 339 340 341 342 343 344 345 346 347 348 349 350 351
-[79] 352 353 354 355 356 357 358 359 360 361 362 363 364 365 366, 1, 2, 3, 4:273))
-
-?factor
-
-#Check for outliers....
-
-#dygraph
-
-temp_xts <- xts(snotel_825_clean$temperature_mean, order.by = snotel_825_clean$Date)
-
-dygraph(temp_xts) %>%
-  dyAxis("y", label = "Daily temperature (°C)") 
-
-#EDIT. The above didn't work, trying a different approach. 
-
-```
 
 
 ### Calculating varience
@@ -300,7 +291,7 @@ residuals_2021 <- daily_wy_aver %>%
 ```{r residuals 1987}
 
 ggplot(residuals_1987, aes(residual)) +
-  geom_histogram(alpha = 0.5, color = "blue", bins = 15) +
+  geom_histogram(alpha = 0.5, color = "blue", bins = 15, binwidth = 2) +
   theme_base() +
   xlab("Temperature (°C) Above or Below Mean") +
   ylab("Count")
@@ -313,7 +304,8 @@ ggplot(residuals_1987, aes(residual)) +
 ```{r deviations 1987}
 
 ggplot(residuals_1987, aes(deviation)) +
-  geom_histogram(alpha = 0.5, color = "blue", bins = 15) +
+geom_histogram(alpha = 0.5, color = "blue", bins = 15, binwidth = 1) +
+  scale_x_continuous(breaks = seq(0, 15, by=5)) +
   theme_base() +
   xlab("Diurnal Temperature Fluctuation (°C)") +
   ylab("Count")
@@ -322,12 +314,44 @@ ggplot(residuals_1987, aes(deviation)) +
 
 **Distribution of 1987 diurnal temperature fluctuation from the 1987-2021 period of record.**
 
+```{r percent of year 1987}
+
+sum(residuals_1987$deviation, na.rm = TRUE)
+
+865.0682
+
+residuals_1987 <- residuals_1987 %>% 
+  mutate(prcnt = deviation/865.0682*100)
+
+sum(residuals_1987$prcnt, na.rm = TRUE)
+
+ggplot(residuals_1987, aes(prcnt)) +
+geom_histogram(alpha = 0.5, color = "blue", bins = 15, binwidth = 0.1) +
+  #scale_x_continuous(breaks = seq(0, 15, by=5)) +
+  theme_base() +
+  xlab("Diurnal Temperature Fluctuation (°C)") +
+  ylab("Percent of Year")
+
+
+ggplot(residuals_1987) + #, color = waterYear)) +
+  geom_jitter(aes(x = deviation, y = prcnt), width = 1, size=1) +
+  theme_few() +
+  #geom_smooth(method = "lm", se=FALSE) +
+  #scale_colour_identity() +
+  #scale_color_manual(name = "Water Year") 
+  ylab('Percent of Year') + 
+  xlab('Deviation (°C)')
+
+```
+
+**Percent of year 1987 for the deviation. This... doesn't look right.**
+
 ### 2021
 
 ```{r residuals 2021}
 
 ggplot(residuals_2021, aes(residual)) +
-  geom_histogram(alpha = 0.5, color = "blue", bins = 15) +
+  geom_histogram(alpha = 0.5, color = "blue", binwidth = 2) +
   theme_base() +
   xlab("Temperature (°C) Above or Below Mean") +
   ylab("Count")
@@ -339,28 +363,108 @@ ggplot(residuals_2021, aes(residual)) +
 ```{r deviations 2021}
 
 ggplot(residuals_2021, aes(deviation)) +
-  geom_histogram(alpha = 0.5, color = "blue", bins = 15) +
+  geom_histogram(alpha = 0.5, color = "blue", bins = 15, binwidth = 1) +
+  scale_x_continuous(breaks = seq(0, 15, by=5)) +
   theme_base() +
   xlab("Diurnal Temperature Fluctuation (°C)") +
   ylab("Count")
+# 
+# ggplot(residuals_2021, aes(deviation)) +
+# geom_histogram(binwidth=1,
+#                  center = 6,
+#                  aes(col=I("blue"))) +
+#   scale_x_continuous(breaks = seq(0, 15, by=5))
+#   scale_x_continuous(breaks=seq(1,max(residuals_2021$deviation) + 1, by = 2))
 
 ```
 
-**Distribution of 2021 diurnal temperature fluctuation from the 1987-2021 period of record.**
+**Distribution of 2021 diurnal temperature fluctuation from the 1987-2021 period of record.** *Scale not the same as 1987*
+
+```{r percent of year 2021}
+
+sum(residuals_2021$deviation, na.rm = TRUE)
+
+# 832.3876
+
+residuals_2021 <- residuals_2021 %>% 
+  mutate(prcnt = deviation/832.3876*100)
+
+sum(residuals_2021$prcnt, na.rm = TRUE)
+
+ggplot(residuals_2021, aes(prcnt)) +
+geom_histogram(alpha = 0.5, color = "blue", bins = 15, binwidth = 0.1) +
+  #scale_x_continuous(breaks = seq(0, 15, by=5)) +
+  theme_base() +
+  xlab("Diurnal Temperature Fluctuation (°C)") +
+  ylab("Percent of Year")
+
+# This looks weird. Maybe a scatter plot is more appropriate.
+
+ggplot(residuals_2021, aes(prcnt)) +
+geom_histogram(alpha = 0.5, color = "blue", bins = 15, binwidth = 0.1) +
+  #scale_x_continuous(breaks = seq(0, 15, by=5)) +
+  theme_base() +
+  xlab("Diurnal Temperature Fluctuation (°C)") +
+  ylab("Percent of Year")
+
+ggplot(residuals_2021) + #, color = waterYear)) +
+  geom_jitter(aes(x = deviation, y = prcnt), width = 1, size=1) +
+  theme_few() +
+  #geom_smooth(method = "lm", se=FALSE) +
+  #scale_colour_identity() +
+  #scale_color_manual(name = "Water Year") 
+  ylab('Percent of Year') + 
+  xlab('Deviation (°C)')
+
+```
+
+**Percent of year 2021 for the deviaation. This... doesn't look right.**
+
+
+# Mann-Kendall & Sen's Slope
+
+### Mann Kendal for Tower site daily temperatures
+
+```{r MK Tower}
+
+# excluding dates where no temperature data were recorded. 
+
+str(daily_wy_aver)
+
+daily_wy_aver4 <- daily_wy_aver2 %>% 
+  filter(Date > "1986-07-17")
+
+tower_mk <- mk.test(daily_wy_aver4$temperature_mean)
+print(tower_mk)
+
+```
+
+### Sen's Slope for Tower site daily temperatures
+
+```{r Sens Tower}
+
+tower_sens <- sens.slope(daily_wy_aver4$temperature_mean)
+
+print(tower_sens)
+
+```
+
+# SNOTEL Site corrections
+
+*"The Morrissey method also shows more variations in temperature trends between sites than the Oyler method, which dampens site-to-site variability in temperature trends.* 
+
 
 # Next steps / Further questions
 
 ### SNOTEL
 
-Need to investigate site specific issues related to disturbances (general SNOTEL issues). 
+Need to investigate site specific issues related to disturbances (general SNOTEL issues). *Unsure of methods*
 
-Having issues with day-of-year and water year interactions. This keeps me from showing mean trendlines over the whole period of record as R does not want to recognize the x axis as anything other than numerical.   
+~~Having issues with day-of-year and water year interactions. This keeps me from showing mean trendlines over the whole period of record as R does not want to recognize the x axis as anything other than numerical.~~ *Resolved*  
 
-Would using a pivot table be better when displaying temperature for 240 sites? (What data management is best for that much data?)
+Would using a pivot table be better when displaying temperature for 240 sites? (What data management is best for that much data?) *Doesn't look like it's needed currently*
 
 How to include oscillation influence into the data? 
-
-Need to include a couple statistic tests. 
 
 ### Beyond SNOTEL
 
@@ -388,10 +492,49 @@ write.csv(SNOTEL_StudyArea,"C:/Users/13074/Documents/ESS580/thesis_project/thesi
 
 ```{r summary StudyArea}
 
-summary(SNOTEL_StudyArea)
+head(SNOTEL_StudyArea)
 
-#lol, this is meaningless. 
 ```
+
+# Coop Data
+
+NOAA/NWS Cooperative Observer Network
+
+Two stations near steamboat, according to this [site](https://wrcc.dri.edu/inventory/coop05.html). 
+057936 02 SBTC2 UNITED STATES CO ROUTT +7 STEAMBOAT SPRINGS 40 30 17 -106 51 58  6636
+057942 02 SSPC2 UNITED STATES CO ROUTT +7 STEAMBOAT SPRINGS 1 W 40 29 00 -106 51 00 6700
+
+Downloading from the [Iowa Environmental Mesonet](https://mesonet.agron.iastate.edu/request/coop/fe.phtml?network=COCLIMATE). NOAA package not working, maybe due to user error. 
+
+```{r Read in Steamboat COOP, echo=TRUE}
+# coops_search(station_name = 057936,product = "air_temperature") # Handy R package did not work.
+
+coop_steamboat <- read.csv("C:/Users/13074/Documents/ESS580/thesis_project/thesis_research/data_raw/steamboat_nwscoop_1900_2022.csv", header = TRUE)
+```
+
+
+```{r xts in Steamboat COOP}
+
+coop_steamboat$Date <- mdy(coop_steamboat$day) #change date from character to date format, capitalize to work with Water year functon from NWIS.
+
+coop_sb_cleanish <- coop_steamboat %>% 
+  addWaterYear() %>% 
+  mutate(daymonth = format(as.Date(Date), "%d-%m")) %>% 
+  na.omit()
+
+#str(coop_steamboat)
+
+sb_coop_temp_xts <- xts(coop_sb_cleanish$avg_T_c, order.by = coop_sb_cleanish$Date)
+
+dygraph(sb_coop_temp_xts) %>%
+  dyAxis("y", label = "Daily temperature (°C)") 
+
+
+```
+
+
+
+
 
 # Notes from SF, 22/6:
 
@@ -400,3 +543,10 @@ Some initial thoughts: 1) I assume that frequency is the raw count, i.e., number
 # Notes, Monday 27/6
 
 Figured out the water day issue and applied it to the Day of water year figures (this was an issue that I spent waaaaaay too much time on). Went the wrong way with pivot tables, day of year, and using average annual temp for the mean aily figure.  Going to use Excel to check if correct. Goal for Tuesday: Determine daily percentages.
+
+# Notes, Thursday 30/6
+
+Need to discuss methods of identifying temperature shifts due to sensor changes.
+
+Not sure how to show percent of days for data.
+
