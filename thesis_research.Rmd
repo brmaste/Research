@@ -41,6 +41,7 @@ library(trend)
 library(nhdplusTools)
 library(lfstat)
 library(ggpubr)
+library(kableExtra)
 
 #Stats
 library(forcats)
@@ -72,7 +73,7 @@ head(snotel_825_tower) # check the date, usually a character.
 snotel_825_tower$Date <- as.Date(snotel_825_tower$date) #change date from character to date format, capitalize to work with Water year functon from NWIS.
 
 snotel_825_clean <- snotel_825_tower %>% # filter for the timeframe
-  filter(Date >= "1978-10-01" & Date <= "2021-08-31") %>%
+  filter(Date >= "1978-10-01" & Date <= "2021-09-30") %>%
   filter(temperature_mean >= -30 & temperature_mean <= 20) %>% # removing outliers   
   addWaterYear() %>% 
   mutate(daymonth = format(as.Date(Date), "%d-%m")) %>% 
@@ -83,7 +84,7 @@ snotel_825_clean <- snotel_825_tower %>% # filter for the timeframe
 snotel_825$Date <- as.Date(snotel_825$date) #change date from character to date format, capitalize to work with Water year functon from NWIS.
 
 snotel_825_clean <- snotel_825 %>% # filter for the timeframe
-  filter(Date >= "1978-10-01" & Date <= "2021-08-31") %>%
+  filter(Date >= "1978-10-01" & Date <= "2021-09-31") %>%
   filter(temperature_mean >= -30 & temperature_mean <= 20) %>% # removing outliers   
   addWaterYear() %>% 
   mutate(daymonth = format(as.Date(Date), "%d-%m")) %>%
@@ -109,7 +110,7 @@ write.csv(snotel_825_clean,"C:/Users/13074/Documents/ESS580/thesis_project/thesi
 ### Figure check
 
 ```{r 825 simple plot}
-ggplot(snotel_825_clean, aes(x = Date, y = temperature_mean, filter(waterYear = 1990))) +
+ggplot(snotel_825_clean, aes(x = Date, y = temperature_mean, filter(waterYear = 1990))) + #this filter didn't work.....
   geom_point() + #lwd = 2) +
   theme_few() +
   geom_smooth(method = "lm", se=FALSE) +
@@ -201,7 +202,7 @@ daily_wy_aver2 <- daily_wy_aver %>%
   mutate(date_temp = mean(temperature_mean))
   
 
-daily_wy_aver2$date_temp <- signif(daily_wy_aver2$date_temp,2) #reduce the sig figs
+daily_wy_aver2$date_temp <- signif(daily_wy_aver2$date_temp,3) #reduce the sig figs
 
 
 
@@ -212,9 +213,34 @@ ggplot(daily_wy_aver2, aes(x = waterDay, y = date_temp))+#, color = waterYear)) 
   #geom_smooth(method = "lm", se=FALSE) +
   ylab('Average Daily temperature (°C)') + 
   xlab('Day of water year')
+
+temp_xts_2 <- xts(daily_wy_aver2$date_temp, order.by = as.Date(daily_wy_aver2$waterDay))
+
+dygraph(temp_xts_2) %>%
+  dyAxis("y", label = "(°C)") 
+
 ```
 **Day of year average temperature for the 1987-2021 period of record for Tower SNOTEL site.**
 
+
+# The temperature plateaus in summer
+From 266 to 340, there are strange temperature plateaus in the figures. 
+
+```{r}
+
+# try to show all years as means. 
+plateau_daily_wy_aver <- daily_wy_aver %>% 
+  #filter(waterYear == "1987" | waterYear == "2021") %>%
+  filter(waterDay == 266) %>% 
+  group_by(waterDay) %>% 
+  mutate(date_temp = mean(temperature_mean)) %>% 
+  as.tibble()
+
+head(plateau_daily_wy_aver$date_temp, 1)  
+
+```
+
+Expanding significant figures fixed it.
 
 ## All years vs 1987 & 2021
 
@@ -264,7 +290,7 @@ ggplot(daily_wy_aver3) + #, color = waterYear)) +
 
 
 
-### Calculating varience
+### Calculating variance
 
 ```{r Calculating residuals}
 #Calculating residuals, WY 1987 (first full year on record for 825)
@@ -549,4 +575,213 @@ Figured out the water day issue and applied it to the Day of water year figures 
 Need to discuss methods of identifying temperature shifts due to sensor changes.
 
 Not sure how to show percent of days for data.
+
+# *Corrected Variance* 19/7
+
+The above chunks of code may be incorrect; instead of subtracting the mean temperature for the period of record from the mean annual temperature for each water year, I should switch that and subtract the mean annual temperature for each water year from mean temperature for the period of record to find the residuals:
+
+(all_ave_temp - aver_ann_temp) + temperature_mean - aver_day_temp
+The average of the residuals should be zero.
+
+```{r corrected variance and derivation}
+
+residuals_1987_2 <- daily_wy_aver %>% 
+  group_by(waterYear) %>% 
+  filter(waterYear == 1987) %>% 
+  mutate(residual = (all_ave_temp-aver_ann_temp)+temperature_mean-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual)))
+
+mean(residuals_1987_2$residual)
+
+residuals_2021_2 <- daily_wy_aver %>% 
+  group_by(waterYear) %>% 
+  filter(waterYear == 2021) %>% 
+  mutate(residual = (all_ave_temp-aver_ann_temp)+temperature_mean-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual)))
+
+mean(residuals_2021_2$residual)
+
+```
+
+Based on the calculated means, this looks correct.
+
+### 1987
+
+```{r residuals 2 1987}
+
+ggplot(residuals_1987_2, aes(residual)) +
+  geom_histogram(alpha = 0.5, color = "blue", bins = 15, binwidth = 2) +
+  theme_base() +
+  xlab("Temperature (°C) Above or Below Mean") +
+  ylab("Count")
+
+```
+
+**Distribution of daily temperature variance for 1987 compared to the 1987-2021 period of record.**
+
+
+```{r deviations 2 1987}
+
+ggplot(residuals_1987_2, aes(deviation)) +
+geom_histogram(alpha = 0.5, color = "blue", bins = 15, binwidth = 1) +
+  scale_x_continuous(breaks = seq(0, 15, by=5)) +
+  theme_base() +
+  xlab("Diurnal Temperature Fluctuation (°C)") +
+  ylab("Count")
+
+```
+
+**Distribution of 1987 diurnal temperature fluctuation from the 1987-2021 period of record.**
+
+### 2021
+
+```{r residuals 2 2021}
+
+ggplot(residuals_2021_2, aes(residual)) +
+  geom_histogram(alpha = 0.5, color = "blue", binwidth = 2) +
+  theme_base() +
+  xlab("Temperature (°C) Above or Below Mean") +
+  ylab("Count")
+
+```
+
+**Distribution of daily temperature variance for 2021 compared to the 1987-2021 period of record.**
+
+```{r deviations 2 2021}
+
+ggplot(residuals_2021_2, aes(deviation)) +
+  geom_histogram(alpha = 0.5, color = "blue", bins = 15, binwidth = 1) +
+  scale_x_continuous(breaks = seq(0, 15, by=5)) +
+  theme_base() +
+  xlab("Diurnal Temperature Fluctuation (°C)") +
+  ylab("Count")
+# 
+# ggplot(residuals_2021, aes(deviation)) +
+# geom_histogram(binwidth=1,
+#                  center = 6,
+#                  aes(col=I("blue"))) +
+#   scale_x_continuous(breaks = seq(0, 15, by=5))
+#   scale_x_continuous(breaks=seq(1,max(residuals_2021$deviation) + 1, by = 2))
+
+```
+
+**Distribution of 2021 diurnal temperature fluctuation from the 1987-2021 period of record.** *Scale not the same as 1987*
+
+# Standard Deviation 
+
+To figure out the standard deviation for each year, I want the "residual" for each daily value. 
+
+The standard deviation will be the daily residual minus the mean of the residuals by water year, summed and squared, then divided by the number of observations minus one. The square root of the resulting value of which is thus the standard deviation for the water year. 
+
+```{r sd}
+standard_dev <- daily_wy_aver %>% 
+  group_by(waterYear) %>% 
+  filter(waterYear >= 1987 & waterYear <= 2021) %>% 
+  mutate(residual = (all_ave_temp-aver_ann_temp)+temperature_mean-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual)))
+```
+
+
+```{r sd2}
+standard_dev_87 <- standard_dev %>% 
+  filter(waterYear == 1987) %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+           mutate(sd_1 = residual-resid_mean)
+
+standard_dev_87 <- standard_dev_87 %>%
+  group_by(waterYear) %>%
+  mutate(sd_2 = (((sum((sd_1)^2))/((sum(tabulate(standard_dev_87$waterDay))))))^(0.5))
+```
+
+
+```{r sd3}
+
+standard_dev_88 <- standard_dev %>% 
+  filter(waterYear == 1988) %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+           mutate(sd_1 = residual-resid_mean)
+
+standard_dev_88 <- standard_dev_88 %>%
+  group_by(waterYear) %>%
+  mutate(sd_2 = (((sum((sd_1)^2))/((sum(tabulate(standard_dev_87$waterDay))))))^(0.5))
+
+
+```
+
+
+```{r sd4}
+
+standard_dev_89 <- standard_dev %>% 
+  filter(waterYear == 198) %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+           mutate(sd_1 = residual-resid_mean)
+
+standard_dev_89 <- standard_dev_89 %>%
+  group_by(waterYear) %>%
+  mutate(sd_2 = (((sum((sd_1)^2))/((sum(tabulate(standard_dev_87$waterDay))))))^(0.5))
+
+```
+
+## Standard Deviation each year (likely not correct)
+
+```{r sd5}
+standard_dev_all <- standard_dev %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+
+standard_dev_all <- standard_dev_all %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+  mutate(sd_1 = residual-resid_mean) %>% 
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr))))^(0.5)) %>%
+  distinct(sd_2, .keep_all = TRUE) %>% 
+   select(waterYear, sd_2)
+
+standard_dev_all %>% 
+  kable(.,'html') %>%
+  kable_styling() %>%
+  scroll_box(width='250px',height='500px')
+
+ggplot(standard_dev_all, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+```
+
+
+```{r sd6, eval=FALSE, include=FALSE}
+# Trying to get the sum of waterYear occurances
+
+# standard_dev_all <- standard_dev %>% 
+#   group_by(waterYear) %>% 
+#   summarise(n = sum(tabulate(standard_dev_all$waterDay)))
+
+# standard_dev_all <- standard_dev %>% 
+#   group_by(waterYear) %>% 
+#   mutate(resid_mean = mean(residual)) %>%
+#   mutate(sd_1 = residual-resid_mean) %>% 
+#   mutate(sd_2 = (((sum((sd_1)^2))/((sum(tabulate(standard_dev_all$waterDay))))))^(0.5)) %>%
+#   distinct(sd_2, .keep_all = TRUE) %>% 
+#    select(waterYear, sd_2)
+
+# ggplot(standard_dev_all, aes(sd_2)) +
+#   geom_histogram(alpha = 0.5, color = "blue", bins = 6, binwidth = 1) +
+#   theme_base() +
+#   xlab("Temperature (°C) Above or Below Mean") +
+#   ylab("Count")
+#    
+# ggplot(standard_dev_all, aes(sd_2)) +
+#   geom_histogram(alpha = 0.5, color = "blue", bins = 6, binwidth = 1) +
+#   theme_base() +
+#   xlab("Temperature (°C) Above or Below Mean") +
+#   ylab("Count")
+
+
+```
 
