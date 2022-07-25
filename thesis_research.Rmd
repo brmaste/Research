@@ -691,7 +691,7 @@ standard_dev_87 <- standard_dev %>%
 
 standard_dev_87 <- standard_dev_87 %>%
   group_by(waterYear) %>%
-  mutate(sd_2 = (((sum((sd_1)^2))/((sum(tabulate(standard_dev_87$waterDay))))))^(0.5))
+  mutate(sd_2 = (((sum((sd_1)^2))/((sum(tabulate(standard_dev_87$waterDay)))-1)))^(0.5))
 ```
 
 
@@ -705,7 +705,7 @@ standard_dev_88 <- standard_dev %>%
 
 standard_dev_88 <- standard_dev_88 %>%
   group_by(waterYear) %>%
-  mutate(sd_2 = (((sum((sd_1)^2))/((sum(tabulate(standard_dev_87$waterDay))))))^(0.5))
+  mutate(sd_2 = (((sum((sd_1)^2))/((sum(tabulate(standard_dev_87$waterDay)))-1)))^(0.5))
 
 
 ```
@@ -721,7 +721,7 @@ standard_dev_89 <- standard_dev %>%
 
 standard_dev_89 <- standard_dev_89 %>%
   group_by(waterYear) %>%
-  mutate(sd_2 = (((sum((sd_1)^2))/((sum(tabulate(standard_dev_87$waterDay))))))^(0.5))
+  mutate(sd_2 = (((sum((sd_1)^2))/((sum(tabulate(standard_dev_87$waterDay)))-1)))^(0.5))
 
 ```
 
@@ -736,7 +736,7 @@ standard_dev_all <- standard_dev_all %>%
   group_by(waterYear) %>% 
   mutate(resid_mean = mean(residual)) %>%
   mutate(sd_1 = residual-resid_mean) %>% 
-  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr))))^(0.5)) %>%
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr-1))))^(0.5)) %>%
   distinct(sd_2, .keep_all = TRUE) %>% 
    select(waterYear, sd_2)
 
