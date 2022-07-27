@@ -673,6 +673,7 @@ To figure out the standard deviation for each year, I want the "residual" for ea
 
 The standard deviation will be the daily residual minus the mean of the residuals by water year, summed and squared, then divided by the number of observations minus one. The square root of the resulting value of which is thus the standard deviation for the water year. 
 
+
 ```{r sd}
 standard_dev <- daily_wy_aver %>% 
   group_by(waterYear) %>% 
@@ -725,7 +726,7 @@ standard_dev_89 <- standard_dev_89 %>%
 
 ```
 
-## Standard Deviation each year (likely not correct)
+## Standard Deviation each year
 
 ```{r sd5}
 standard_dev_all <- standard_dev %>% 
@@ -754,6 +755,29 @@ ggplot(standard_dev_all, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
   xlab('Water year')
 ```
 
+```{r sd mk & ss}
+
+sd_mk <- mk.test(standard_dev_all$sd_2)
+print(sd_mk)
+
+sd_sens <- sens.slope(standard_dev_all$sd_2)
+print(sd_sens)
+
+```
+
+# Notes from SF, 26/7
+
+Need to look at seasonal variation, with examples of Nov-Mar & Jun-Aug.
+
+In addition to Tmean, analyze Tmax & Tmin
+
+Run seasonal MK & SS tests rather than over the whole time series. (Look at 2018 Water paper as well as 2020 Water Paper.)
+
+*Need to correct data for SNOTEL sensor changes and figure out SNOTEL homogeneity. Obvious shift in above SD figure.* 
+
+Stack the 2021 and 1987 figures on top of each other.
+
+Moving to COOP data until sensor change is identified.
 
 ```{r sd6, eval=FALSE, include=FALSE}
 # Trying to get the sum of waterYear occurances
